@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  </head>
+  <body>
+    <script type="application/javascript">
+
+      const userChat = 'Kiesling'
+
+      document.body.style.margin = '0'
+
+      const form = document.createElement('form')
+      form.style.width = '100%'
+      form.style.height = '100vh'
+      form.style.backgroundColor = '#23272a'
+      form.style.display = 'grid'
+      form.style.gridTemplateColumns = '2% 18% 78% 2%'
+      form.style.gridTemplateRows = '2% 87% 2% 7% 2%'
+
+      const formInput = document.createElement('form')
+      formInput.style.backgroundColor = '#2c2f33'
+      formInput.style.gridArea = '4/2/5/4'
+      formInput.style.display = 'flex'
+      formInput.style.flexWrap = 'wrap'
+      formInput.style.minHeight = '6%'
+      formInput.style.width = '100%'
+      form.append(formInput)
+
+      const inputSend = document.createElement('input')
+      inputSend.style.flexGrow = '1'
+      inputSend.style.backgroundColor = '#2c2f33'
+      inputSend.placeholder = 'Escribe un mensaje aquí'
+      inputSend.style.fontSize = "15px"
+      inputSend.style.color = '#ffffff'
+      inputSend.style.outline = 'none'
+      inputSend.style.border = 'none'
+      inputSend.style.marginLeft = '1%'
+
+      const maxLength = 140
+      inputSend.setAttribute('maxlength', maxLength)
+
+      const counter = document.createElement('span')
+      counter.innerText = `0/140`
+      counter.style.color = '#000000'
+      counter.style.alignSelf = 'center'
+      counter.style.color = 'gray'
+      counter.style.marginLeft = '1%'
+      formInput.append(counter)
+      formInput.append(inputSend)
+
+      inputSend.addEventListener('input', () =>  {
+        counter.innerText = `${inputSend.value.length}/140`
+      })
+      
+      const buttonSend = document.createElement('button')
+      buttonSend.style.minWidth = '6%'
+      buttonSend.style.backgroundColor = '#99aab5'
+      buttonSend.style.color = 'white'
+      buttonSend.style.outline = 'none'
+      buttonSend.style.border = 'none'
+      buttonSend.append('Enviar')
+      formInput.append(buttonSend)
+
+      const formMessages = document.createElement('form')
+      formMessages.style.backgroundColor = '#23272a'
+      formMessages.style.gridArea = '1/1/3/5'
+      formMessages.style.display = 'flex'
+      formMessages.style.flexDirection = 'column-reverse'
+      formMessages.style.overflowY = 'auto'
+      formMessages.style.overflowX = 'hidden'
+      form.append(formMessages)
+    
+      const Messages = document.createElement('ul')
+      Messages.style.display = 'flex'
+      Messages.style.flexDirection = 'column'
+
+      const Message = (text, user) => {
+        const message = document.createElement('li')
+        message.style.width = '35%'
+        message.style.backgroundColor = '#99aab5'
+        message.style.color = '#FFFFFF'
+        message.style.display = 'flex'
+        message.style.flexDirection = 'column'
+        message.style.borderRadius = '0px 10px 10px 10px'
+        message.style.margin = '0.5%'
+        message.style.padding = '1%'
+        message.style.overflowWrap = 'anywhere'
+
+        const userSpan = document.createElement('span')
+        userSpan.append(`${user} `)
+        userSpan.style.fontWeight = 'bold'
+        message.append(userSpan)
+
+        if (user == userChat){
+          message.style.backgroundColor = '#7289da'
+          message.style.alignSelf = 'end'
+          message.style.borderRadius = '10px 0px 10px 10px'
+          message.style.marginRight = '3.5%'
+        }
+        
+        if (/\.(gif|jpe?g|png|webp|bmp)$/i.test(text)) {
+          const img = document.createElement('img')
+          img.src = text
+          img.style.marginTop = '2%'
+          message.append(img)
+        } else if (/\b(?!(?:https?|ftp):\/\/\S+\.(?:jpg|jpeg|gif|png|bmp))((?:https?|ftp):\/\/\S+)\b/gi.test(text)) {
+          if (user != 'Anonymouse'){
+            const link = document.createElement('iframe')
+            link.src = text
+            message.append(link)
+          }
+        }
+        else
+          message.append(text)
+
+        return message
+      }
+
+      const getMessages = async () => {
+        const response = await fetch('http://uvgenios.online/api/messages')
+        const messages = await response.json()
+        Messages.innerHTML = '';
+        const msgs = messages.map((message) => Message(message.text, message.user))
+        msgs.forEach((msg) => Messages.append(msg))
+      }
+
+      const postMessage = async (text) => {
+        const body = {
+          text,
+          user: userChat
+        }
+        const response = await fetch('http://uvgenios.online/api/messages', {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        return response
+      }
+
+      getMessages()
+
+      setInterval(() => {
+        getMessages()
+      }, 60000)
+
+      const postAction = async () => {
+        event.preventDefault()
+        await postMessage(inputSend.value)   
+        const newMessage = Message(inputSend.value, userChat)
+        inputSend.value = ''
+        inputSend.value.length = 0
+        Messages.append(newMessage)
+        counter.innerText = `0/140`
+      }
+
+      buttonSend.addEventListener('click', async (event) => {
+        postAction()
+      })
+
+      inputSend.addEventListener("keydown", async (event) =>{
+        if (event.key === 'Enter'){
+          postAction()
+        }
+      })
+
+      formMessages.append(Messages)
+      
+      document.body.append(form)
+    </script>
+  </body>
+</html>
